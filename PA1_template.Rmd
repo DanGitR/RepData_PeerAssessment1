@@ -1,0 +1,36 @@
+---
+title: "Reproducible Research: Peer Assessment 1"
+date: September 2018
+author: DJR
+output:
+  html_document: default
+keep_md: true
+---
+
+``{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+``{r libraries, message= FALSE}
+        library(dplyr)
+        library(ggplot2)
+        library(readr)
+        #library(Hmisc)
+```
+## Loading and preprocessing the data
+df = read_csv("activity.csv.gz")
+
+
+## What is mean total number of steps taken per day?
+
+
+
+## What is the average daily activity pattern?
+
+
+
+## Imputing missing values
+
+
+
+## Are there differences in activity patterns between weekdays and weekends?
