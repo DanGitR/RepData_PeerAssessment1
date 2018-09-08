@@ -13,10 +13,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Load libraires
 ```{r libraries, message= FALSE}
 library(lattice)
-#library(dplyr)
+#library(zoo)
+library(dplyr)
+library(plyr)
 #library(ggplot2)
 #library(impute)
-#library(lubridate)
+library(lubridate)
 #library(Hmisc)
 ```
 ## Loading and preprocessing the data
@@ -45,8 +47,8 @@ mean1=mean(bydaydf$steps)
 median1=median(bydaydf$steps)
 ```
 
- Mean is `r format(mean1,digits=2, nsmall=2)` steps per day.   
- Median is `r median1` steps per day.   
+ **Mean** is `r format(mean1,digits=2, nsmall=2)` steps per day.   
+ **Median** is `r median1` steps per day.   
         
 
 ## What is the average daily activity pattern?
@@ -64,9 +66,78 @@ maxstepsint <- byintervaldf$interval[which.max(byintervaldf$steps)]
 
 Interval number `r maxstepsint` contains the maximum number of steps accorss all days on average.  
 
-## Imputing missing values
+## Imputing missing values  
+5. Calculate and report the total number of missing values in the dataset.  
+```{r addmissingval}
+nasum <- sum(is.na(origdf$steps))
+```
+
+The steps column has `r nasum` missing values.  
+
+6. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be   sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.   
+  
+Will fill in values using the mean for the 5-minute interval.
+
+7. Create a new dataset that is equal to the original dataset but with the missing data filled in.  
+```{r fill}
+newdf <- origdf
+ impute.mean <- function(x) replace(x, is.na(x), mean(x, na.rm = TRUE))
+#newdf<-na.aggregate(newdf, by = "interval", ..., FUN = mean, na.rm = FALSE, maxgap = Inf)
+ newdf<-ddply(newdf, ~ interval, transform, steps = impute.mean(steps))
+newdf<-arrange(newdf,date)
+```
+
+8. Make a histogram of the total number of steps taken each day. 
+```{r plot3}
+#Create data frame with sum of steps for each day.
+bydaydfnew <- aggregate(steps~date,newdf,sum)
+histogram(bydaydfnew$steps,xlab="Total Daily Steps", ylab= "Day Count (New)", type= "count", nint=9)
+```
+
+Calculate and report the **mean** and **median** total number of steps taken per day.  
+```{r meanmedian2}
+mean2=mean(bydaydfnew$steps)
+median2=median(bydaydfnew$steps)
+```
+
+ The **new mean** is `r format(mean2,digits=9, nsmall=4)` steps per day.   
+ The **new median** is `r format(median2,digits=9,nsmall=4)` steps per day. 
+
+Do these values differ from the estimates from the first part of the assignment? 
+
+The **mean** went from `r format(mean1,digits=9, nsmall=4)` to`r format(mean2,digits=9, nsmall=4)`  
+
+The **median** went from `r format(median1,digits=9, nsmall=4)` to`r format(median2,digits=2, nsmall=2)`  
 
 
+What is the impact of imputing missing data on the estimates of the total daily number of steps? 
 
+The **mean** changed by  `r mean2-mean1`.  
+The **median** changed by  `r median2-median1`. 
+
+The **absolute difference** between the median and the mean went from `r abs(median1-mean1)` to `r abs(median2-mean2)`.    
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+Use the dataset with the filled-in missing values for this part. 
+
+9. Create a new factor variable in the dataset with two levels -- "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.  
+
+```{r weekendfactor}
+
+#weekend<-sapply(dateymd,ifelse(wday(dateymd)==7 | wday(dateymd) ==1),1,0))
+dateymd<-ymd(as.character(newdf$date))
+newdf<-mutate(newdf,date = dateymd)
+newdf<-mutate(newdf,weekend = ifelse(wday(date)==7 | wday(date) ==1,"weekend","weekday"))
+newdf$weekend<-as.factor(newdf$weekend)
+
+```
+
+1. Make a panel plot containing a time series plot (i.e. `type = "l"`) of the 5-minute interval (x-axis) and the   average number of steps taken, averaged across all weekday days or weekend days (y-axis).   
+```{r plot4}
+#Create new data frame with average steps for each interval
+byintervaldfnew <- aggregate(steps~interval+ weekend,newdf,mean)
+xyplot(steps~interval | weekend, data=byintervaldfnew , type = "l", layout= c(1,2), xlab = "5-minute interval of the day", ylab= "average steps")
+
+```
+
